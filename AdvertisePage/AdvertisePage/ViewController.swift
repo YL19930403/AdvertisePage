@@ -8,13 +8,22 @@
 
 import UIKit
 
+let WIDTH = UIScreen.mainScreen().bounds.width
+let HEIGHT = UIScreen.mainScreen().bounds.height
+
 class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+        self.title = "首页"
+        NSNotificationCenter.defaultCenter().addObserver(self , selector: #selector(ViewController.pushToAd), name:"PUSHTOAD", object: nil )
     }
 
+    func pushToAd(){
+        let adVc =  AdvertiseVC()
+        self.navigationController?.pushViewController(adVc, animated: true )
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -22,4 +31,31 @@ class ViewController: UIViewController {
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

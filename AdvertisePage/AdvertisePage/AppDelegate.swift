@@ -16,10 +16,141 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
-        // Override point for customization after application launch.
+        
+        self.window = UIWindow.init(frame:UIScreen.mainScreen().bounds)
+        self.window?.rootViewController = UINavigationController.init(rootViewController: ViewController())
+            self.window?.makeKeyAndVisible()
+        
+        // 1.判断沙盒中是否存在广告图片，如果存在，直接显示
+//        let str = (NSUserDefaults.standardUserDefaults().valueForKey(adImageName) ) as! String
+        
+            let str = (NSUserDefaults.standardUserDefaults().valueForKey(adImageName))
+            if let fileStr = str {
+              let filePathStr =  (fileStr as! String)
+                let filePath = getFilePathImageName(filePathStr)
+                let isExist = self.isFileExistWithFilePath(filePathStr)
+                let advertiseV = AdvertiseView(frame:(self.window?.bounds)!)
+                advertiseV.filePath = filePath
+                advertiseV.show()
+                
+                if  (isExist) {
+                    let advertiseV = AdvertiseView(frame:(self.window?.bounds)!)
+                    advertiseV.filePath = filePath
+                    advertiseV.show()
+                
+                }
+                
+            }
+        
+        
+  
+        
+         // 2.无论沙盒中是否存在广告图片，都需要重新调用广告接口，判断广告是否更新
+        self.getAdvertisingImage()
         return true
     }
 
+    /**
+     *  初始化广告页面
+     */
+    func getAdvertisingImage(){
+        let imageArr = [
+                    "http://imgsrc.baidu.com/forum/pic/item/9213b07eca80653846dc8fab97dda144ad348257.jpg" ,
+                    "http://pic.paopaoche.net/up/2012-2/20122220201612322865.png" ,
+                    "http://img5.pcpop.com/ArticleImages/picshow/0x0/20110801/2011080114495843125.jpg"  ,
+                    "http://www.mangowed.com/uploads/allimg/130410/1-130410215449417.jpg"
+                    ]
+        
+        let imageUrl = imageArr[Int(arc4random()) % imageArr.count]
+        //获取图片名
+        let stringArr = imageUrl.componentsSeparatedByString("/")
+        let imageName = stringArr.last
+        //拼接沙盒路径
+        let filePath = self.getFilePathImageName(imageName!)
+        let isExist = self.isFileExistWithFilePath(filePath)
+        if (!isExist)   {   //如果该图片不存在，则删除以前的图片，下载新的图片
+            self.dwnloadImageWithUrl(imageUrl, imageName: imageName!)
+        }
+    }
+    
+    
+    /**
+     *  下载新图片
+     */
+    func dwnloadImageWithUrl(imageUrl : String , imageName : String){
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)) { 
+//                let data = NSData(contentsOfURL: NSURL(string: imageUrl)!)
+            let data = NSData.init(contentsOfURL: NSURL(string:imageUrl)!)
+            if let d = data {
+                let image = UIImage.init(data:d)
+                let filePath  = self.getFilePathImageName(imageName) //保存文件的名称
+                
+                if ((UIImagePNGRepresentation(image!)?.writeToFile(filePath, atomically: true )) != nil){  //保存成功
+                    self.deleteOldImage()
+                    NSUserDefaults.standardUserDefaults().setValue(imageName, forKey: adImageName)
+                    NSUserDefaults.standardUserDefaults().synchronize()
+                    
+                }else {
+                    print("保存失败")
+                }
+            }
+            
+            
+//                    let data = NSData.init(contentsOfURL: NSURL(string: imageUrl)!)
+//                let image = UIImage(data: da!)
+        
+            
+        }
+    }
+    
+    /**
+     删除旧的图片
+     */
+    func deleteOldImage(){
+        
+            let imageName = NSUserDefaults.standardUserDefaults().valueForKey(adImageName)
+        if let  imgName = imageName  {
+            let nameStr = (imgName as! String )
+            if (nameStr.isEmpty){
+                let filePath = self.getFilePathImageName(nameStr)
+                let fileManager = NSFileManager.defaultManager()
+                
+                do {
+                    try fileManager.removeItemAtPath(filePath)
+                }catch{
+                    
+                }
+            }
+            
+        }
+    }
+    
+    
+    
+    /**
+     *  根据图片名拼接文件路径
+     */
+    func getFilePathImageName(imageName : String) -> String {
+        if !imageName.isEmpty {
+            let paths = NSSearchPathForDirectoriesInDomains(.CachesDirectory,.UserDomainMask , true )
+            let filePath = (paths.first! as NSString).stringByAppendingPathComponent(imageName)
+            return filePath
+        }
+        return ""
+    }
+    
+    /**
+     *  判断文件是否存在
+     */
+    func isFileExistWithFilePath(filePatht : String) -> Bool {
+        let fileManager = NSFileManager.defaultManager()
+        var isDirectory : ObjCBool = ObjCBool(false)
+//        return fileManager.fileExistsAtPath(filePatht, isDirectory: isDirectory)
+        return fileManager.fileExistsAtPath(filePatht, isDirectory: &isDirectory)
+        
+    }
+    
+    
     func applicationWillResignActive(application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
